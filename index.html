@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conde Cerámicas - Catálogo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <button id="btnAbrirLogin" title="Acceso Administrativo">&#128274;</button>
+    <img src="imagenes/supizq.png" class="decoracion sup-izq" alt="">
+    <img src="imagenes/supder.png" class="decoracion sup-der" alt="">
+    <img src="imagenes/bannerinferior.png" class="banner-inf" alt="">
+
+    <header>
+        <div class="logo-container">
+            <img src="imagenes/condeceramicalogo.png" alt="Logo Conde Cerámicas" class="logo-header">
+        </div>
+        
+        <div class="controles">
+            <input type="text" id="buscadorNombre" placeholder="Buscar producto..." class="input-busqueda">
+
+            <select id="filtroCategoria">
+                <option value="Todos">Todas las Categorías</option>
+            </select>
+
+            <select id="filtroEstado" style="display: none;">
+                <option value="todos">Todos los estados</option>
+                <option value="visibles">Solo Visibles</option>
+                <option value="ocultos">Solo Ocultos</option>
+            </select>
+
+            <select id="ordenPrecio">
+                <option value="defecto">Ordenar por precio</option>
+                <option value="asc">Menor a Mayor</option>
+                <option value="desc">Mayor a Menor</option>
+            </select>
+
+            <button id="abrirForm" title="Agregar Nueva Pieza">+</button>
+        </div>
+    </header>
+
+    <main id="lista-productos" class="grill"></main>
+
+    <div id="modalLogin" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <span id="cerrarLogin" class="cerrar">&times;</span>
+            <h2 style="margin-bottom: 20px;">Panel de Control</h2>
+            <div class="form-group">
+                <label>Usuario / Email</label>
+                <input type="text" id="usuarioAdmin" placeholder="admin@email.com">
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Contraseña</label>
+                <input type="password" id="passAdmin" placeholder="••••••••">
+            </div>
+            <button id="btnConfirmarLogin" class="btn-guardar" style="margin-top: 20px;">Entrar</button>
+            <p id="errorLogin" style="color: #c0392b; display: none; margin-top: 10px; font-size: 0.9rem;">
+                Credenciales incorrectas.
+            </p>
+        </div>
+    </div>
+
+    <div id="modalForm" class="modal">
+        <div class="modal-content">
+            <span id="cerrarModal" class="cerrar">&times;</span>
+            <h2 id="modalTitulo">Gestión de Pieza</h2>
+            <form id="form-producto">
+                <input type="hidden" id="edit-id">
+                
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="nombre" required>
+                </div>
+
+                <div class="input-row">
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <div style="display: flex; gap: 5px;">
+                            <select id="categoria" required></select>
+                            <button type="button" id="btnNuevaCat" title="Agregar Nueva">+</button>
+                            <button type="button" id="btnEditarCat" title="Editar Nombre">✎</button>
+                            <button type="button" id="btnEliminarCat" title="Eliminar Categoría" style="background-color: #d9534f; color: white;">✖</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Venta</label>
+                        <select id="tipo">
+                            <option value="Unitario">Unitario</option>
+                            <option value="Set">Set</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <div class="form-group">
+                        <label>Precio ($)</label>
+                        <input type="number" id="precio" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Subir Imagen</label>
+                        <input type="file" id="inputArchivo" accept="image/*">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Fotos Cargadas:</label>
+                    <div id="contenedorMiniaturas" class="miniaturas-editor"></div>
+                    <input type="hidden" id="imagen_url">
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="descripcion" rows="3"></textarea>
+                </div>
+
+                <div class="form-group checkbox-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="disponible" checked style="width: auto;">
+                    <label style="margin-bottom: 0;">Visible al público</label>
+                </div>
+
+                <button type="submit" class="btn-guardar" id="btnSubmit">Guardar Producto</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalDetalle" class="modal">
+        <div class="modal-content detalle-ancho">
+            <span id="cerrarDetalle" class="cerrar">&times;</span>
+            
+            <div class="detalle-grid"> 
+                
+                <div class="detalle-imagenes">
+                    <img id="fotoPrincipal" src="imagenes/placeholder.png" alt="Producto">
+                    <div id="miniaturas"></div> 
+                </div>
+
+                <div class="detalle-info">
+                    <h2 id="detNombre">Mobiliario / Cerámica</h2>
+                    <p id="detPrecio" class="precio-fuerte">$0</p>
+                    <p id="detDescripcion">Cargando detalles de la pieza...</p>
+                </div>
+
+            </div> 
+        </div>
+    </div>
+
+    <!-- Carga de Librerías en orden correcto -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="script.js" defer></script>
+</body>
+</html>
