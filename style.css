@@ -602,4 +602,23 @@ header {
         cursor: pointer !important;
         user-select: none !important; /* Evita que se seleccione el texto accidentalmente al tocarlo */
     }
+
+    /* Añade los nuevos IDs a las reglas existentes de tu hoja de estilo */
+    #btnNuevaCat, #btnEditarCat, #btnEliminarCat,
+    #btnNuevoTipo, #btnEditarTipo, #btnEliminarTipo {
+        width: 35px;
+        height: 35px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    #btnNuevaCat, #btnNuevoTipo { background-color: #a67c52; color: white; border: none; }
+    #btnEditarCat, #btnEditarTipo { background-color: #f0ad4e; color: white; border: none; }
+    #btnEliminarCat, #btnEliminarTipo { background-color: #d9534f; color: white; border: none; }
 }
