@@ -239,6 +239,30 @@ async function subirImagenASupabase(file) {
     return urlData.publicUrl;
 }
 
+// Función para eliminar físicamente un archivo del Storage usando su URL pública
+async function eliminarImagenDeSupabase(urlPublica) {
+    if (!urlPublica || urlPublica.includes('placeholder.png')) return;
+
+    try {
+        const partes = urlPublica.split('/imagenes-productos/');
+        if (partes.length < 2) return;
+        
+        const rutaArchivo = partes[1];
+
+        const { data, error } = await supabaseClient.storage
+            .from('imagenes-productos')
+            .remove([rutaArchivo]);
+
+        if (error) {
+            console.error("Error al eliminar archivo físico del Storage:", error.message);
+        } else {
+            console.log("Archivo eliminado con éxito del Storage:", rutaArchivo);
+        }
+    } catch (err) {
+        console.error("Error inesperado al procesar borrado de archivo:", err);
+    }
+}
+
 function actualizarMiniaturasEditor() {
     if (!contenedorMiniaturas) return;
     contenedorMiniaturas.innerHTML = '';
