@@ -4,7 +4,6 @@
 const SUPABASE_URL = "https://qgtnezetemljrudcefef.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_x86K93yqFumhOTqrC7MCWA_KQQOw-mW";     
 
-// Cambiamos el nombre de la constante para evitar conflictos de redundancia con la librería externa
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- Selectores Globales ---
@@ -19,6 +18,8 @@ const filtroEstado = document.getElementById('filtroEstado');
 const campoUrlHidden = document.getElementById('imagen_url');
 const selectorCategoria = document.getElementById('categoria'); 
 const selectorTipo = document.getElementById('tipo');
+const inputArchivo = document.getElementById('inputArchivo');
+const contenedorMiniaturas = document.getElementById('contenedorMiniaturas');
 
 let modoAdmin = false;
 let editandoId = null;
@@ -50,6 +51,7 @@ if (btnPlus) {
         form.reset(); 
         document.getElementById('edit-id').value = ""; 
         campoUrlHidden.value = ""; 
+        actualizarMiniaturasEditor(); // Inicia completamente limpio
         modalForm.style.display = "flex"; 
     };
 }
@@ -133,8 +135,11 @@ function renderizarProductos(lista) {
     }
 
     lista.forEach(p => {
+        // Validamos que el campo tenga texto válido
         const tieneFoto = p.imagen_url && p.imagen_url !== "null" && p.imagen_url.trim() !== "";
-        const primeraFoto = tieneFoto ? p.imagen_url : 'imagenes/placeholder.png';
+        
+        // CORREGIDO: Extraemos estrictamente la primera URL [0] separada por comas para evitar imágenes rotas
+        const primeraFoto = tieneFoto ? p.imagen_url.split(',')[0].trim() : 'imagenes/placeholder.png';
 
         const div = document.createElement('div');
         div.className = `tarjeta ${modoAdmin && !p.disponible ? 'oculto-admin' : ''}`;
@@ -162,7 +167,35 @@ function abrirDetalle(id) {
     document.getElementById('detNombre').textContent = p.nombre_producto;
     document.getElementById('detPrecio').textContent = `$${Number(p.precio).toLocaleString('es-CL')}`;
     document.getElementById('detDescripcion').textContent = p.descripcion || "Sin descripción.";
-    document.getElementById('fotoPrincipal').src = p.imagen_url || 'imagenes/placeholder.png';
+    
+    const divMiniaturas = document.getElementById('miniaturas');
+    const fotoPrincipal = document.getElementById('fotoPrincipal');
+    
+    if (divMiniaturas) divMiniaturas.innerHTML = '';
+
+    if (p.imagen_url && p.imagen_url.trim() !== "" && p.imagen_url !== "null") {
+        const listaFotos = p.imagen_url.split(',').map(r => r.trim());
+        fotoPrincipal.src = listaFotos[0];
+
+        if (listaFotos.length > 0 && divMiniaturas) {
+            listaFotos.forEach((url, index) => {
+                const imgMin = document.createElement('img');
+                imgMin.src = url;
+                if (index === 0) imgMin.className = 'activa';
+
+                imgMin.onclick = () => {
+                    document.querySelectorAll('#miniaturas img').forEach(i => i.classList.remove('activa'));
+                    imgMin.classList.add('activa');
+                    fotoPrincipal.src = url;
+                };
+
+                divMiniaturas.appendChild(imgMin);
+            });
+        }
+    } else {
+        fotoPrincipal.src = 'imagenes/placeholder.png';
+    }
+
     modalDetalle.style.setProperty('display', 'flex', 'important');
 }
 
@@ -173,10 +206,15 @@ window.abrirEditar = (id) => {
     document.getElementById('edit-id').value = id;
     document.getElementById('nombre').value = p.nombre_producto;
     document.getElementById('categoria').value = p.id_categoria;
+    document.getElementById('tipo').value = p.id_tipo;
     document.getElementById('precio').value = p.precio;
     document.getElementById('imagen_url').value = p.imagen_url || "";
     document.getElementById('descripcion').value = p.descripcion || "";
     document.getElementById('disponible').checked = p.disponible;
+    
+    // CORREGIDO: Dibujar las miniaturas existentes con su boton de eliminar al abrir edicion
+    actualizarMiniaturasEditor(); 
+    
     modalForm.style.display = "flex";
 };
 
@@ -206,28 +244,96 @@ async function subirImagenASupabase(file) {
     return urlData.publicUrl;
 }
 
+// Dibuja las fotos guardadas en el input oculto dentro del contenedor visual del editor
+function actualizarMiniaturasEditor() {
+    if (!contenedorMiniaturas) return;
+    contenedorMiniaturas.innerHTML = '';
+    
+    const valorHidden = campoUrlHidden.value;
+    const tieneRutas = valorHidden && valorHidden !== "null" && valorHidden.trim() !== "";
+    const rutas = tieneRutas ? valorHidden.split(',').map(r => r.trim()) : [];
+    
+    rutas.forEach((url, i) => {
+        if (!url || url === "null" || url.trim() === "") return;
+        
+        const d = document.createElement('div');
+        d.className = 'miniatura-item';
+        d.innerHTML = `
+            <img src="${url}" onerror="this.onerror=null; this.src='imagenes/placeholder.png';">
+            <button type="button" class="btn-borrar-foto" title="Eliminar Foto">&times;</button>
+        `;
+        
+        // Permite eliminar la URL del listado y actualiza el campo oculto
+        d.querySelector('.btn-borrar-foto').onclick = () => {
+            let arregloUrls = campoUrlHidden.value.split(',').map(r => r.trim());
+            arregloUrls.splice(i, 1);
+            campoUrlHidden.value = arregloUrls.join(',');
+            actualizarMiniaturasEditor(); 
+        };
+        
+        contenedorMiniaturas.appendChild(d);
+    });
+}
+
+// Escuchador dinámico para previsualizar archivos nuevos locales sin pisar lo guardado
+if (inputArchivo && contenedorMiniaturas) {
+    inputArchivo.addEventListener('change', () => {
+        const archivos = inputArchivo.files;
+
+        for (let i = 0; i < archivos.length; i++) {
+            const archivo = archivos[i];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.className = 'miniatura-item';
+                div.innerHTML = `
+                    <img src="${e.target.result}" alt="Previsualización">
+                    <button type="button" class="btn-borrar-foto" title="Quitar">&times;</button>
+                `;
+                
+                div.querySelector('.btn-borrar-foto').onclick = () => { div.remove(); };
+                contenedorMiniaturas.appendChild(div);
+            };
+
+            reader.readAsDataURL(archivo);
+        }
+    });
+}
+
 // ==========================================
 // 6. GUARDAR O EDITAR PRODUCTO (INSERT / UPDATE)
 // ==========================================
 form.onsubmit = async (e) => {
     e.preventDefault();
 
-    const archivoImagen = document.getElementById('inputArchivo').files[0];
-    let urlImagenFinal = campoUrlHidden.value; 
+    const archivosImagenes = document.getElementById('inputArchivo').files;
+    let urlsAcumuladas = [];
 
-    if (archivoImagen) {
-        const urlSubida = await subirImagenASupabase(archivoImagen);
-        if (urlSubida) urlImagenFinal = urlSubida;
+    if (campoUrlHidden.value && campoUrlHidden.value.trim() !== "") {
+        urlsAcumuladas = campoUrlHidden.value.split(',').map(r => r.trim());
     }
+
+    // Subida asíncrona secuencial de las fotos nuevas seleccionadas
+    if (archivosImagenes.length > 0) {
+        for (let i = 0; i < archivosImagenes.length; i++) {
+            const urlSubida = await subirImagenASupabase(archivosImagenes[i]);
+            if (urlSubida) {
+                urlsAcumuladas.push(urlSubida);
+            }
+        }
+    }
+
+    const stringUrlFinal = urlsAcumuladas.join(',');
 
     const datosProducto = {
         nombre_producto: document.getElementById('nombre').value,
         precio: parseInt(document.getElementById('precio').value),
         descripcion: document.getElementById('descripcion').value,
         disponible: document.getElementById('disponible').checked,
-        imagen_url: urlImagenFinal,
+        imagen_url: stringUrlFinal, 
         id_categoria: parseInt(selectorCategoria.value) || null, 
-        id_tipo: parseInt(document.getElementById('tipo').value) || null
+        id_tipo: parseInt(selectorTipo.value) || null
     };
 
     if (editandoId) {
@@ -246,6 +352,7 @@ form.onsubmit = async (e) => {
     }
 
     modalForm.style.display = "none";
+    if (contenedorMiniaturas) contenedorMiniaturas.innerHTML = '';
     form.reset();
     editandoId = null;
     cargar(); 
@@ -269,15 +376,11 @@ async function eliminarProducto(id) {
 // ==========================================
 // 8. GESTIÓN DINÁMICA DE CATEGORÍAS (SUPABASE)
 // ==========================================
-
-// Función para cargar las categorías desde la base de datos en los selects
 async function cargarCategorias() {
-    const f = document.getElementById('filtroCategoria'); // Select de la barra principal
-    const s = document.getElementById('categoria');       // Select dentro del formulario de pieza
+    const f = document.getElementById('filtroCategoria'); 
 
-    if (!f || !s) return;
+    if (!f || !selectorCategoria) return;
 
-    // Traemos las categorías ordenadas alfabéticamente
     const { data: cats, error } = await supabaseClient
         .from('categoria')
         .select('*')
@@ -288,20 +391,15 @@ async function cargarCategorias() {
         return;
     }
 
-    // Reiniciamos los selectores
     f.innerHTML = '<option value="Todos">Todas las Categorías</option>';
-    s.innerHTML = '';
+    selectorCategoria.innerHTML = '';
 
-    // Rellenamos las opciones con los datos reales de Supabase
     cats.forEach(c => {
         f.innerHTML += `<option value="${c.nombre_categoria}">${c.nombre_categoria}</option>`;
-        s.innerHTML += `<option value="${c.id_categoria}">${c.nombre_categoria}</option>`;
+        selectorCategoria.innerHTML += `<option value="${c.id_categoria}">${c.nombre_categoria}</option>`;
     });
 }
 
-// --- Listeners para los botones de gestión de categorías ---
-
-// 1. Agregar Nueva Categoría
 const btnNuevaCat = document.getElementById('btnNuevaCat');
 if (btnNuevaCat) {
     btnNuevaCat.onclick = async () => {
@@ -316,16 +414,15 @@ if (btnNuevaCat) {
             alert("Error al crear la categoría: " + error.message);
         } else {
             alert("Categoría creada con éxito");
-            await cargarCategorias(); // Refresca las listas desplegables
+            await cargarCategorias(); 
         }
     };
 }
 
-// 2. Editar Nombre de Categoría Existente
 const btnEditarCat = document.getElementById('btnEditarCat');
 if (btnEditarCat) {
     btnEditarCat.onclick = async () => {
-        const idCat = selectorCategoria.value; // Obtiene el ID seleccionado
+        const idCat = selectorCategoria.value; 
         const nombreActual = selectorCategoria.options[selectorCategoria.selectedIndex]?.text;
         
         if (!idCat) return alert("Selecciona una categoría válida para editar.");
@@ -342,12 +439,11 @@ if (btnEditarCat) {
             alert("Error al renombrar: " + error.message);
         } else {
             await cargarCategorias();
-            cargar(); // Refresca el catálogo por si cambió el nombre vinculado
+            cargar(); 
         }
     };
 }
 
-// 3. Eliminar Categoría
 const btnEliminarCat = document.getElementById('btnEliminarCat');
 if (btnEliminarCat) {
     btnEliminarCat.onclick = async () => {
@@ -355,7 +451,7 @@ if (btnEliminarCat) {
         const nombreCat = selectorCategoria.options[selectorCategoria.selectedIndex]?.text;
         if (!idCat) return alert("Selecciona una categoría.");
         
-        if (confirm(`¿Estás seguro de eliminar la categoría "${nombreCat}"?\nNota: Asegúrate de desvincular sus productos primero para evitar conflictos de llaves foráneas.`)) {
+        if (confirm(`¿Estás seguro de eliminar la categoría "${nombreCat}"?\nNota: Asegúrate de desvincular sus productos primero.`)) {
             const { error } = await supabaseClient
                 .from('categoria')
                 .delete()
@@ -375,8 +471,6 @@ if (btnEliminarCat) {
 // ==========================================
 // 9. GESTIÓN DINÁMICA DE TIPOS DE VENTA (SUPABASE)
 // ==========================================
-
-// Función para cargar los tipos desde la tabla 'tipo' de Supabase
 async function cargarTipos() {
     if (!selectorTipo) return;
 
@@ -390,18 +484,16 @@ async function cargarTipos() {
         return;
     }
 
-    // Limpiamos y rellenamos el selector del formulario usando id_tipo y nombre_tipo
     selectorTipo.innerHTML = '';
     tipos.forEach(t => {
         selectorTipo.innerHTML += `<option value="${t.id_tipo}">${t.nombre_tipo}</option>`;
     });
 }
 
-// 1. Agregar Nuevo Tipo de Venta
 const btnNuevoTipo = document.getElementById('btnNuevoTipo');
 if (btnNuevoTipo) {
     btnNuevoTipo.onclick = async () => {
-        const nombre = prompt("Nombre del nuevo tipo de venta (ej: Unitario, Set, Mayorista):");
+        const nombre = prompt("Nombre del nuevo tipo de venta (ej: Unitario, Set):");
         if (!nombre || nombre.trim() === "") return;
 
         const { error } = await supabaseClient
@@ -412,12 +504,11 @@ if (btnNuevoTipo) {
             alert("Error al crear el tipo de venta: " + error.message);
         } else {
             alert("Tipo de venta creado con éxito");
-            await cargarTipos(); // Refresca el selector en el formulario
+            await cargarTipos(); 
         }
     };
 }
 
-// 2. Editar Tipo de Venta Existente
 const btnEditarTipo = document.getElementById('btnEditarTipo');
 if (btnEditarTipo) {
     btnEditarTipo.onclick = async () => {
@@ -438,12 +529,11 @@ if (btnEditarTipo) {
             alert("Error al renombrar: " + error.message);
         } else {
             await cargarTipos();
-            cargar(); // Refresca el catálogo por si se muestra el tipo en tarjetas
+            cargar(); 
         }
     };
 }
 
-// 3. Eliminar Tipo de Venta
 const btnEliminarTipo = document.getElementById('btnEliminarTipo');
 if (btnEliminarTipo) {
     btnEliminarTipo.onclick = async () => {
@@ -451,7 +541,7 @@ if (btnEliminarTipo) {
         const nombreTipo = selectorTipo.options[selectorTipo.selectedIndex]?.text;
         if (!idTipo) return alert("Selecciona un tipo de venta.");
         
-        if (confirm(`¿Estás seguro de eliminar el tipo "${nombreTipo}"?\nNota: Los productos asociados quedarán sin tipo definido.`)) {
+        if (confirm(`¿Estás seguro de eliminar el tipo "${nombreTipo}"?`)) {
             const { error } = await supabaseClient
                 .from('tipo')
                 .delete()
@@ -468,7 +558,7 @@ if (btnEliminarTipo) {
     };
 }
 
-// Ejecución inicial limpia
+// Execución inicial limpia al cargar la ventana
 cargarCategorias();
 cargarTipos();
 cargar();

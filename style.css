@@ -15,7 +15,7 @@ body {
 }
 
 /* ==========================================================================
-   2. ACCESO DISCRETO (ICONO ADMIN) Y BOTONES DE CATEGORÍAS
+   2. ACCESO DISCRETO (ICONO ADMIN) Y BOTONES DE GESTIÓN (COMPARTIDOS)
    ========================================================================== */
 #btnAbrirLogin {
     position: absolute;
@@ -51,22 +51,51 @@ body {
     box-shadow: 0 0 15px rgba(192, 57, 43, 0.4);
 }
 
-#btnNuevaCat, #btnEditarCat, #btnEliminarCat {
-    width: 35px;
-    height: 35px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    flex-shrink: 0;
+/* ==========================================================================
+   BOTONES DE GESTIÓN (CATEGORÍAS Y TIPOS DE VENTA) - MÁXIMA PRIORIDAD
+   ========================================================================== */
+
+/* 1. Forzamos el tamaño, bordes y comportamiento flexbox */
+#btnNuevaCat, #btnEditarCat, #btnEliminarCat,
+#btnNuevoTipo, #btnEditarTipo, #btnEliminarTipo {
+    width: 35px !important;
+    height: 35px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    font-size: 1rem !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    outline: none !important;
+    transition: background-color 0.2s, transform 0.1s !important;
 }
 
-#btnNuevaCat { background-color: #a67c52; color: white; border: none; }
-#btnEditarCat { background-color: #f0ad4e; color: white; border: none; }
-#btnEliminarCat { background-color: #d9534f; color: white; border: none; }
+/* Efecto hover al pasar el mouse */
+#btnNuevaCat:hover, #btnEditarCat:hover, #btnEliminarCat:hover,
+#btnNuevoTipo:hover, #btnEditarTipo:hover, #btnEliminarTipo:hover {
+    transform: scale(1.05) !important;
+}
+
+/* 2. Forzamos la eliminación de bordes nativos grises y asignamos los colores correctos */
+#btnNuevaCat, #btnNuevoTipo { 
+    background-color: #a67c52 !important; 
+    color: white !important; 
+    border: none !important; 
+}
+
+#btnEditarCat, #btnEditarTipo { 
+    background-color: #f0ad4e !important; 
+    color: white !important; 
+    border: none !important; 
+}
+
+#btnEliminarCat, #btnEliminarTipo { 
+    background-color: #d9534f !important; 
+    color: white !important; 
+    border: none !important; 
+}
 
 /* ==========================================================================
    3. DECORACIÓN Y HEADER (ESCRITORIO)
@@ -148,7 +177,7 @@ header {
     background: white; 
     border-radius: 20px; 
     overflow: hidden;
-    box-shadow: 0 10px 25 rgba(0,0,0,0.05);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     transition: transform 0.3s; 
     cursor: pointer; 
     text-align: center; 
@@ -263,6 +292,12 @@ header {
     padding: 12px; border: 1px solid #dccabd; border-radius: 12px; font-family: inherit;
 }
 
+/* Forzamos a que las cajas select del formulario ocupen el espacio restante fluido */
+#form-producto select {
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
 #filtroEstado { background: #fff; border: 1px solid #dccabd; padding: 10px 18px; border-radius: 25px; }
 
 .miniaturas-editor {
@@ -287,15 +322,11 @@ header {
 
 .oculto-admin { border: 2px dashed #f5b7b1 !important; opacity: 0.7; }
 
-
 /* ==========================================================================
    8. AJUSTES ROBUSTOS PARA MÓVIL (PANTALLAS MENORES A 768PX)
    ========================================================================== */
 @media (max-width: 768px) {
     
-    /* ==========================================================================
-       1. ENCABEZADO Y FILTROS EN FILA FLUIDA (SOLUCIÓN DEFINITIVA)
-       ========================================================================== */
     header {
         display: flex !important;
         flex-direction: column !important;
@@ -311,11 +342,10 @@ header {
         margin: 0 auto !important;
     }
 
-    /* Forzamos a que .controles sea una fila que permita saltos de línea (wrap) */
     .controles {
         display: flex !important;
         flex-direction: row !important; 
-        flex-wrap: wrap !important; /* Crucial: permite que los elementos bajen si no caben */
+        flex-wrap: wrap !important; 
         width: 100% !important;
         gap: 8px !important; 
         justify-content: space-between !important;
@@ -323,41 +353,38 @@ header {
         box-sizing: border-box !important;
     }
 
-    /* El buscador se ve obligado a ocupar todo el ancho (100%), adueñándose de la primera línea */
     .input-busqueda {
-        flex: 1 0 100% !important; /* Forzamos a que no se encoja y tome el 100% */
+        flex: 1 0 100% !important; 
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
         font-size: 0.9rem !important;
         padding: 8px 14px !important;
-        margin-bottom: 4px !important; /* Pequeña separación con los filtros de abajo */
+        margin-bottom: 4px !important; 
         border-radius: 20px !important;
     }
 
-    /* Al buscador ocupar todo el ancho, estos dos selectores bajan juntos a la segunda línea 
-       y se reparten el espacio en un 50% exacto menos el espacio del gap */
     #filtroCategoria, #ordenPrecio {
         display: block !important;
-        flex: 1 !important; /* Se dividen equitativamente el espacio restante de la fila */
+        flex: 1 !important; 
         width: calc(50% - 4px) !important; 
-        min-width: 0 !important; /* Evita que el texto interno desborde la caja flex */
+        min-width: 0 !important; 
         box-sizing: border-box !important;
-        font-size: 0.82rem !important; /* Un toque más pequeño para que quepa bien en pantallas angostas */
+        font-size: 0.82rem !important; 
         padding: 8px 5px !important;
         margin: 0 !important;
         border-radius: 20px !important;
     }
 
     #filtroEstado {
-        display: none; /* Por defecto oculto para visitantes */
-        flex: 1 0 100% !important; /* Cuando JS le dé 'inline-block', Flexbox lo obligará a ocupar toda la línea de abajo */
+        display: none; 
+        flex: 1 0 100% !important; 
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
         font-size: 0.85rem !important;
         padding: 8px 14px !important;
-        margin: 4px 0 0 0 !important; /* Separación sutil con los filtros de arriba */
+        margin: 4px 0 0 0 !important; 
         border-radius: 20px !important;
         background: #fff;
     }
@@ -381,9 +408,6 @@ header {
     .tarjeta p { font-size: 0.75rem !important; margin: 2px 0 !important; }
     .tarjeta .precio { font-size: 0.85rem !important; }
 
-    /* ==========================================================================
-       4. CONTROL ESTRICTO DE MODALES (EVITA DESBORDES LATERALES)
-       ========================================================================== */
     .modal {
         position: fixed !important;
         top: 0 !important;
@@ -395,7 +419,7 @@ header {
         display: none; 
         justify-content: center !important; 
         align-items: center !important;     
-        padding: 12px !important; /* Respiro perimetral mínimo en pantallas chicas */
+        padding: 12px !important; 
         box-sizing: border-box !important;
     }
 
@@ -419,7 +443,6 @@ header {
         min-height: auto !important; 
     }
 
-    /* Forzamos a que la grilla interna use todo el ancho real disponible */
     .detalle-grid {
         display: flex !important;
         flex-direction: column !important; 
@@ -449,30 +472,25 @@ header {
         margin: 0 auto !important;
     }
 
-    /* ¡CORREGIDO! CARRUSEL COMPLETAMENTE ADAPTADO AL ANCHO DE LA TARJETA BLANCA */
     #miniaturas {
         display: flex !important;
         flex-direction: row !important;
         justify-content: flex-start !important; 
         align-items: center !important;
         gap: 8px !important;
-        
-        /* Forzamos límites estrictos para que no rompa los márgenes de la tarjeta */
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
-        
         overflow-x: auto !important; 
         overflow-y: hidden !important;
         white-space: nowrap !important;
-        
         -webkit-overflow-scrolling: touch !important; 
         padding: 4px 0 !important;
         margin: 10px 0 !important;
     }
 
     #miniaturas::-webkit-scrollbar {
-        display: none !important; /* Oculta la barra nativa para un look de app limpia */
+        display: none !important; 
     }
 
     #miniaturas img { 
@@ -483,21 +501,18 @@ header {
         border-radius: 6px !important;
     }
 
-    /* ==========================================================================
-       5. TEXTOS TOTALMENTE JUSTIFICADOS Y CON MÁRGENES FLUIDOS
-       ========================================================================== */
     .detalle-info {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
-        padding: 0 !important; /* Quitamos paddings raros */
+        padding: 0 !important; 
     }
 
     .detalle-info h2 {
         font-size: 1.3rem !important; 
         margin: 10px 0 6px 0 !important;
         word-wrap: break-word !important; 
-        text-align: left !important; /* El título se ve mejor alineado a la izquierda */
+        text-align: left !important; 
     }
 
     .detalle-info .precio-fuerte {
@@ -506,17 +521,15 @@ header {
         text-align: left !important;
     }
 
-    /* ¡NUEVO! El párrafo de la descripción se justifica matemáticamente al espacio real */
     .detalle-info p {
         font-size: 0.88rem !important;
         line-height: 1.5 !important;
         margin: 0 !important;
-        text-align: justify !important; /* <--- TEXTO JUSTIFICADO */
+        text-align: justify !important; 
         word-wrap: break-word !important;
-        text-justify: inter-word !important; /* Optimiza los espacios entre palabras en móviles */
+        text-justify: inter-word !important; 
     }
 
-    /* REPARACIÓN INTEGRAL DEL PANEL DE CONTROL (GESTIÓN DE PIEZA) */
     #form-producto .input-row { display: flex !important; flex-direction: column !important; gap: 10px !important; margin-bottom: 10px !important; }
     #form-producto .form-group { width: 100% !important; }
 
@@ -540,11 +553,7 @@ header {
         padding: 5px !important;
     }
 
-    /* ==========================================================================
-       9. REPARACIÓN DEL BOTÓN ADMIN EN MÓVIL (ELIMINA EL MANCHÓN)
-       ========================================================================== */
     #btnAbrirLogin {
-        /* Aseguramos que mantenga su posición fija sobre las nubes decorativas */
         position: absolute !important;
         top: 15px !important;
         right: 15px !important;
@@ -556,69 +565,46 @@ header {
         justify-content: center !important;
         line-height: 1 !important;
         padding: 0 !important;
-        color: #4a3f35 !important; /* Color nítido para el candado */
-        background: rgba(255, 255, 255, 0.8) !important; /* Fondo claro para que resalte en el móvil */
+        color: #4a3f35 !important; 
+        background: rgba(255, 255, 255, 0.8) !important; 
         border: 1px solid #dccabd !important;
     }
 
-    /* Estilo especial cuando está activo para que la puerta no haga un manchón */
     #btnAbrirLogin.admin-activo {
-        background: #c0392b !important; /* Rojo administrativo */
+        background: #c0392b !important; 
         border-color: #c0392b !important;
-        color: #ffffff !important; /* Forzamos a que el filtro de color del emoji sea blanco/luz */
+        color: #ffffff !important; 
         box-shadow: 0 4px 12px rgba(192, 57, 43, 0.3) !important;
     }
-    /* ==========================================================================
-       10. DISEÑO DE CHECKBOX (VISIBLE AL PÚBLICO) REFORZADO PARA MÓVIL
-       ========================================================================== */
-    /* Le damos espacio perimetral a toda la fila del checkbox */
+
     #modalForm .checkbox-group {
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
-        gap: 12px !important; /* Espacio generoso entre el cuadro y la etiqueta */
-        margin: 18px 0 !important; /* Separación con la descripción (arriba) y el botón guardar (abajo) */
+        gap: 12px !important; 
+        margin: 18px 0 !important; 
         width: 100% !important;
         box-sizing: border-box !important;
         padding: 5px 2px !important;
     }
 
-    /* Agrandamos el cuadro selector (Checkbox) para que sea táctil */
     #modalForm .checkbox-group input[type="checkbox"] {
         width: 18px !important;
         height: 18px !important;
-        transform: scale(1.35) !important; /* Escala el tamaño del cuadro de forma limpia */
+        transform: scale(1.35) !important; 
         margin: 0 !important;
         cursor: pointer !important;
-        flex-shrink: 0 !important; /* Evita que se deforme si el texto es largo */
+        flex-shrink: 0 !important; 
     }
 
-    /* Estilizamos la etiqueta de texto para una lectura cómoda */
     #modalForm .checkbox-group label {
-        font-size: 1rem !important; /* Texto un poco más grande y claro */
-        font-weight: 600 !important; /* Mantiene el estilo seminegrita del diseño */
+        font-size: 1rem !important; 
+        font-weight: 600 !important; 
         color: #4a3f35 !important;
         margin: 0 !important;
         cursor: pointer !important;
-        user-select: none !important; /* Evita que se seleccione el texto accidentalmente al tocarlo */
+        user-select: none !important; 
     }
 
-    /* Añade los nuevos IDs a las reglas existentes de tu hoja de estilo */
-    #btnNuevaCat, #btnEditarCat, #btnEliminarCat,
-    #btnNuevoTipo, #btnEditarTipo, #btnEliminarTipo {
-        width: 35px;
-        height: 35px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-        flex-shrink: 0;
-    }
-
-    #btnNuevaCat, #btnNuevoTipo { background-color: #a67c52; color: white; border: none; }
-    #btnEditarCat, #btnEditarTipo { background-color: #f0ad4e; color: white; border: none; }
-    #btnEliminarCat, #btnEliminarTipo { background-color: #d9534f; color: white; border: none; }
+    /* ELIMINADO EL CÓDIGO DUPLICADO QUE SOBREESCRIBÍA EL TAMAÑO DE LOS BOTONES */
 }
