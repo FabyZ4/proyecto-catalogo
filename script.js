@@ -219,6 +219,7 @@ window.abrirEditar = (id) => {
 async function subirImagenASupabase(file) {
     if (!file) return null;
 
+    const archivoOptimizado = await comprimirImagen(file);
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `productos/${fileName}`;
@@ -281,22 +282,13 @@ function actualizarMiniaturasEditor() {
             <button type="button" class="btn-borrar-foto" title="Eliminar Foto">&times;</button>
         `;
         
-        // Reemplaza esta sección específica dentro de tu función actualizarMiniaturasEditor()
         d.querySelector('.btn-borrar-foto').onclick = async () => {
-            // 1. Obtenemos el arreglo actual de URLs
             let arregloUrls = campoUrlHidden.value.split(',').map(r => r.trim());
-            
-            // 2. Guardamos la URL que vamos a eliminar para borrarla del Storage
             const urlAEliminar = arregloUrls[i];
-            
-            // 3. Eliminamos la URL del arreglo de la base de datos
             arregloUrls.splice(i, 1);
             campoUrlHidden.value = arregloUrls.join(',');
-            
-            // 4. 🔥 LLAMADA NUEVA: Borramos el archivo físico real del Storage en la nube
             await eliminarImagenDeSupabase(urlAEliminar);
             
-            // 5. Redibujamos las miniaturas en pantalla
             actualizarMiniaturasEditor(); 
         };
         
@@ -326,6 +318,66 @@ if (inputArchivo && contenedorMiniaturas) {
 
             reader.readAsDataURL(archivo);
         }
+    });
+}
+
+// Función para comprimir una imagen a un peso menor a 1 MB usando Canvas
+function comprimirImagen(archivo) {
+    return new Promise((resolve) => {
+        // Si el archivo ya pesa menos de 1 MB (1024 * 1024 bytes), no hace falta comprimir
+        if (archivo.size <= 1024 * 1024) {
+            return resolve(archivo);
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(archivo);
+        
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // 1. Si la imagen es gigantesca en pixeles, reducimos sus dimensiones máximas a 1920px
+                const MAX_WIDTH = 1920;
+                const MAX_HEIGHT = 1080;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // Dibujamos la imagen en el lienzo del canvas con el nuevo tamaño
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // 2. Exportamos el canvas como un Blob JPEG con calidad del 75% (0.75)
+                // Esto reduce drásticamente el peso manteniendo una excelente nitidez visual
+                canvas.toBlob((blob) => {
+                    // Convertimos el Blob de vuelta a un archivo File para que mantenga el nombre original
+                    const archivoComprimido = new File([blob], archivo.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    console.log(`Imagen comprimida: De ${(archivo.size / 1024 / 1024).toFixed(2)} MB a ${(archivoComprimido.size / 1024 / 1024).toFixed(2)} MB`);
+                    resolve(archivoComprimido);
+                }, 'image/jpeg', 0.75);
+            };
+        };
     });
 }
 
