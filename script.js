@@ -471,6 +471,102 @@ if (btnEliminarCat) {
 // ==========================================
 // 9. GESTIÓN DINÁMICA DE TIPOS DE VENTA (SUPABASE)
 // ==========================================
+
+// Función para cargar los tipos desde la tabla 'tipo' de Supabase
+async function cargarTipos() {
+    if (!selectorTipo) return;
+
+    const { data: tipos, error } = await supabaseClient
+        .from('tipo')
+        .select('*')
+        .order('nombre_tipo', { ascending: true });
+
+    if (error) {
+        console.error("Error al cargar tipos de venta:", error);
+        return;
+    }
+
+    // Limpiamos y rellenamos el selector del formulario usando id_tipo y nombre_tipo
+    selectorTipo.innerHTML = '';
+    tipos.forEach(t => {
+        selectorTipo.innerHTML += `<option value="${t.id_tipo}">${t.nombre_tipo}</option>`;
+    });
+}
+
+// 1. Agregar Nuevo Tipo de Venta
+const btnNuevoTipo = document.getElementById('btnNuevoTipo');
+if (btnNuevoTipo) {
+    btnNuevoTipo.onclick = async () => {
+        const nombre = prompt("Nombre del nuevo tipo de venta (ej: Unitario, Set, Mayorista):");
+        if (!nombre || nombre.trim() === "") return;
+
+        const { error } = await supabaseClient
+            .from('tipo')
+            .insert([{ nombre_tipo: nombre.trim() }]);
+
+        if (error) {
+            alert("Error al crear el tipo de venta: " + error.message);
+        } else {
+            alert("Tipo de venta creado con éxito");
+            await cargarTipos(); // Refresca el selector en el formulario
+        }
+    };
+}
+
+// 2. Editar Tipo de Venta Existente
+const btnEditarTipo = document.getElementById('btnEditarTipo');
+if (btnEditarTipo) {
+    btnEditarTipo.onclick = async () => {
+        const idTipo = selectorTipo.value;
+        const nombreActual = selectorTipo.options[selectorTipo.selectedIndex]?.text;
+        
+        if (!idTipo) return alert("Selecciona un tipo de venta válido para editar.");
+        
+        const nuevoNombre = prompt(`Cambiar el nombre de "${nombreActual}" por:`, nombreActual);
+        if (!nuevoNombre || nuevoNombre.trim() === "" || nuevoNombre === nombreActual) return;
+
+        const { error } = await supabaseClient
+            .from('tipo')
+            .update({ nombre_tipo: nuevoNombre.trim() })
+            .eq('id_tipo', idTipo);
+
+        if (error) {
+            alert("Error al renombrar: " + error.message);
+        } else {
+            await cargarTipos();
+            cargar(); // Refresca el catálogo por si se muestra el tipo en tarjetas
+        }
+    };
+}
+
+// 3. Eliminar Tipo de Venta
+const btnEliminarTipo = document.getElementById('btnEliminarTipo');
+if (btnEliminarTipo) {
+    btnEliminarTipo.onclick = async () => {
+        const idTipo = selectorTipo.value;
+        const nombreTipo = selectorTipo.options[selectorTipo.selectedIndex]?.text;
+        if (!idTipo) return alert("Selecciona un tipo de venta.");
+        
+        if (confirm(`¿Estás seguro de eliminar el tipo "${nombreTipo}"?\nNota: Los productos asociados quedarán sin tipo definido.`)) {
+            const { error } = await supabaseClient
+                .from('tipo')
+                .delete()
+                .eq('id_tipo', idTipo);
+
+            if (error) {
+                alert("No se pudo eliminar: " + error.message);
+            } else {
+                alert("Tipo de venta eliminado con éxito");
+                await cargarTipos();
+                cargar();
+            }
+        }
+    };
+}
+
+// ==========================================
+// 9. GESTIÓN DINÁMICA DE TIPOS DE VENTA (SUPABASE)
+// ==========================================
 async function cargarTipos() {
     if (!selectorTipo) return;
 

@@ -605,6 +605,4 @@ header {
         cursor: pointer !important;
         user-select: none !important; 
     }
-
-    /* ELIMINADO EL CÓDIGO DUPLICADO QUE SOBREESCRIBÍA EL TAMAÑO DE LOS BOTONES */
 }
