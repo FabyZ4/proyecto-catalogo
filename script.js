@@ -637,6 +637,66 @@ if (btnEliminarTipo) {
     };
 }
 
+// ==========================================
+// 10. LÓGICA DE FILTROS, BUSCADOR Y ORDENAMIENTO
+// ==========================================
+
+// Función centralizada que aplica todos los filtros activos en cadena
+function aplicarFiltros() {
+    let productosFiltrados = [...productosBase];
+
+    // 1. Filtro por Texto (Buscador por Nombre)
+    const textoBusqueda = document.getElementById('buscadorNombre')?.value.toLowerCase().trim() || "";
+    if (textoBusqueda !== "") {
+        productosFiltrados = productosFiltrados.filter(p => 
+            p.nombre_producto?.toLowerCase().includes(textoBusqueda)
+        );
+    }
+
+    // 2. Filtro por Categoría Desplegable
+    const filtroCat = document.getElementById('filtroCategoria')?.value || "Todos";
+    if (filtroCat !== "Todos") {
+        productosFiltrados = productosFiltrados.filter(p => 
+            p.categoria?.nombre_categoria === filtroCat
+        );
+    }
+
+    // 3. Filtro por Estado (Solo Admin: Visibles / Ocultos)
+    if (modoAdmin) {
+        const filtroEst = document.getElementById('filtroEstado')?.value || "todos";
+        if (filtroEst === "visibles") {
+            productosFiltrados = productosFiltrados.filter(p => p.disponible === true);
+        } else if (filtroEst === "ocultos") {
+            productosFiltrados = productosFiltrados.filter(p => p.disponible === false);
+        }
+    }
+
+    // 4. Ordenamiento por Precio (Menor a Mayor / Mayor a Menor)
+    const orden = document.getElementById('ordenPrecio')?.value || "defecto";
+    if (orden === "asc") {
+        productosFiltrados.sort((a, b) => Number(a.precio || 0) - Number(b.precio || 0));
+    } else if (orden === "desc") {
+        productosFiltrados.sort((a, b) => Number(b.precio || 0) - Number(a.precio || 0));
+    }
+
+    // Volvemos a pintar la grilla con el resultado final filtrado
+    renderizarProductos(productosFiltrados);
+}
+
+// --- Vinculación de Eventos en el HTML ---
+
+// Escuchador para el Buscador por texto (reacciona mientras escribes)
+document.getElementById('buscadorNombre')?.addEventListener('input', aplicarFiltros);
+
+// Escuchador para el selector de Categorías
+document.getElementById('filtroCategoria')?.addEventListener('change', aplicarFiltros);
+
+// Escuchador para el selector de Estado (Visible/Oculto para el Admin)
+document.getElementById('filtroEstado')?.addEventListener('change', aplicarFiltros);
+
+// Escuchador para el selector de Orden de Precios
+document.getElementById('ordenPrecio')?.addEventListener('change', aplicarFiltros);
+
 // Ejecución inicial limpia al cargar la ventana
 cargarCategorias();
 cargarTipos();
