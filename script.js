@@ -135,10 +135,7 @@ function renderizarProductos(lista) {
     }
 
     lista.forEach(p => {
-        // Validamos que el campo tenga texto válido
         const tieneFoto = p.imagen_url && p.imagen_url !== "null" && p.imagen_url.trim() !== "";
-        
-        // CORREGIDO: Extraemos estrictamente la primera URL [0] separada por comas para evitar imágenes rotas
         const primeraFoto = tieneFoto ? p.imagen_url.split(',')[0].trim() : 'imagenes/placeholder.png';
 
         const div = document.createElement('div');
@@ -212,9 +209,7 @@ window.abrirEditar = (id) => {
     document.getElementById('descripcion').value = p.descripcion || "";
     document.getElementById('disponible').checked = p.disponible;
     
-    // CORREGIDO: Dibujar las miniaturas existentes con su boton de eliminar al abrir edicion
     actualizarMiniaturasEditor(); 
-    
     modalForm.style.display = "flex";
 };
 
@@ -244,7 +239,6 @@ async function subirImagenASupabase(file) {
     return urlData.publicUrl;
 }
 
-// Dibuja las fotos guardadas en el input oculto dentro del contenedor visual del editor
 function actualizarMiniaturasEditor() {
     if (!contenedorMiniaturas) return;
     contenedorMiniaturas.innerHTML = '';
@@ -263,7 +257,6 @@ function actualizarMiniaturasEditor() {
             <button type="button" class="btn-borrar-foto" title="Eliminar Foto">&times;</button>
         `;
         
-        // Permite eliminar la URL del listado y actualiza el campo oculto
         d.querySelector('.btn-borrar-foto').onclick = () => {
             let arregloUrls = campoUrlHidden.value.split(',').map(r => r.trim());
             arregloUrls.splice(i, 1);
@@ -275,7 +268,6 @@ function actualizarMiniaturasEditor() {
     });
 }
 
-// Escuchador dinámico para previsualizar archivos nuevos locales sin pisar lo guardado
 if (inputArchivo && contenedorMiniaturas) {
     inputArchivo.addEventListener('change', () => {
         const archivos = inputArchivo.files;
@@ -314,7 +306,6 @@ form.onsubmit = async (e) => {
         urlsAcumuladas = campoUrlHidden.value.split(',').map(r => r.trim());
     }
 
-    // Subida asíncrona secuencial de las fotos nuevas seleccionadas
     if (archivosImagenes.length > 0) {
         for (let i = 0; i < archivosImagenes.length; i++) {
             const urlSubida = await subirImagenASupabase(archivosImagenes[i]);
@@ -471,8 +462,6 @@ if (btnEliminarCat) {
 // ==========================================
 // 9. GESTIÓN DINÁMICA DE TIPOS DE VENTA (SUPABASE)
 // ==========================================
-
-// Función para cargar los tipos desde la tabla 'tipo' de Supabase
 async function cargarTipos() {
     if (!selectorTipo) return;
 
@@ -486,110 +475,16 @@ async function cargarTipos() {
         return;
     }
 
-    // Limpiamos y rellenamos el selector del formulario usando id_tipo y nombre_tipo
     selectorTipo.innerHTML = '';
     tipos.forEach(t => {
         selectorTipo.innerHTML += `<option value="${t.id_tipo}">${t.nombre_tipo}</option>`;
     });
 }
 
-// 1. Agregar Nuevo Tipo de Venta
 const btnNuevoTipo = document.getElementById('btnNuevoTipo');
 if (btnNuevoTipo) {
     btnNuevoTipo.onclick = async () => {
         const nombre = prompt("Nombre del nuevo tipo de venta (ej: Unitario, Set, Mayorista):");
-        if (!nombre || nombre.trim() === "") return;
-
-        const { error } = await supabaseClient
-            .from('tipo')
-            .insert([{ nombre_tipo: nombre.trim() }]);
-
-        if (error) {
-            alert("Error al crear el tipo de venta: " + error.message);
-        } else {
-            alert("Tipo de venta creado con éxito");
-            await cargarTipos(); // Refresca el selector en el formulario
-        }
-    };
-}
-
-// 2. Editar Tipo de Venta Existente
-const btnEditarTipo = document.getElementById('btnEditarTipo');
-if (btnEditarTipo) {
-    btnEditarTipo.onclick = async () => {
-        const idTipo = selectorTipo.value;
-        const nombreActual = selectorTipo.options[selectorTipo.selectedIndex]?.text;
-        
-        if (!idTipo) return alert("Selecciona un tipo de venta válido para editar.");
-        
-        const nuevoNombre = prompt(`Cambiar el nombre de "${nombreActual}" por:`, nombreActual);
-        if (!nuevoNombre || nuevoNombre.trim() === "" || nuevoNombre === nombreActual) return;
-
-        const { error } = await supabaseClient
-            .from('tipo')
-            .update({ nombre_tipo: nuevoNombre.trim() })
-            .eq('id_tipo', idTipo);
-
-        if (error) {
-            alert("Error al renombrar: " + error.message);
-        } else {
-            await cargarTipos();
-            cargar(); // Refresca el catálogo por si se muestra el tipo en tarjetas
-        }
-    };
-}
-
-// 3. Eliminar Tipo de Venta
-const btnEliminarTipo = document.getElementById('btnEliminarTipo');
-if (btnEliminarTipo) {
-    btnEliminarTipo.onclick = async () => {
-        const idTipo = selectorTipo.value;
-        const nombreTipo = selectorTipo.options[selectorTipo.selectedIndex]?.text;
-        if (!idTipo) return alert("Selecciona un tipo de venta.");
-        
-        if (confirm(`¿Estás seguro de eliminar el tipo "${nombreTipo}"?\nNota: Los productos asociados quedarán sin tipo definido.`)) {
-            const { error } = await supabaseClient
-                .from('tipo')
-                .delete()
-                .eq('id_tipo', idTipo);
-
-            if (error) {
-                alert("No se pudo eliminar: " + error.message);
-            } else {
-                alert("Tipo de venta eliminado con éxito");
-                await cargarTipos();
-                cargar();
-            }
-        }
-    };
-}
-
-// ==========================================
-// 9. GESTIÓN DINÁMICA DE TIPOS DE VENTA (SUPABASE)
-// ==========================================
-async function cargarTipos() {
-    if (!selectorTipo) return;
-
-    const { data: tipos, error } = await supabaseClient
-        .from('tipo')
-        .select('*')
-        .order('nombre_tipo', { ascending: true });
-
-    if (error) {
-        console.error("Error al cargar tipos de venta:", error);
-        return;
-    }
-
-    selectorTipo.innerHTML = '';
-    tipos.forEach(t => {
-        selectorTipo.innerHTML += `<option value="${t.id_tipo}">${t.nombre_tipo}</option>`;
-    });
-}
-
-const btnNuevoTipo = document.getElementById('btnNuevoTipo');
-if (btnNuevoTipo) {
-    btnNuevoTipo.onclick = async () => {
-        const nombre = prompt("Nombre del nuevo tipo de venta (ej: Unitario, Set):");
         if (!nombre || nombre.trim() === "") return;
 
         const { error } = await supabaseClient
@@ -637,7 +532,7 @@ if (btnEliminarTipo) {
         const nombreTipo = selectorTipo.options[selectorTipo.selectedIndex]?.text;
         if (!idTipo) return alert("Selecciona un tipo de venta.");
         
-        if (confirm(`¿Estás seguro de eliminar el tipo "${nombreTipo}"?`)) {
+        if (confirm(`¿Estás seguro de eliminar el tipo "${nombreTipo}"?\nNota: Los productos asociados quedarán sin tipo definido.`)) {
             const { error } = await supabaseClient
                 .from('tipo')
                 .delete()
@@ -654,7 +549,7 @@ if (btnEliminarTipo) {
     };
 }
 
-// Execución inicial limpia al cargar la ventana
+// Ejecución inicial limpia al cargar la ventana
 cargarCategorias();
 cargarTipos();
 cargar();
