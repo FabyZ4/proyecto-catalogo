@@ -281,10 +281,22 @@ function actualizarMiniaturasEditor() {
             <button type="button" class="btn-borrar-foto" title="Eliminar Foto">&times;</button>
         `;
         
-        d.querySelector('.btn-borrar-foto').onclick = () => {
+        // Reemplaza esta sección específica dentro de tu función actualizarMiniaturasEditor()
+        d.querySelector('.btn-borrar-foto').onclick = async () => {
+            // 1. Obtenemos el arreglo actual de URLs
             let arregloUrls = campoUrlHidden.value.split(',').map(r => r.trim());
+            
+            // 2. Guardamos la URL que vamos a eliminar para borrarla del Storage
+            const urlAEliminar = arregloUrls[i];
+            
+            // 3. Eliminamos la URL del arreglo de la base de datos
             arregloUrls.splice(i, 1);
             campoUrlHidden.value = arregloUrls.join(',');
+            
+            // 4. 🔥 LLAMADA NUEVA: Borramos el archivo físico real del Storage en la nube
+            await eliminarImagenDeSupabase(urlAEliminar);
+            
+            // 5. Redibujamos las miniaturas en pantalla
             actualizarMiniaturasEditor(); 
         };
         
