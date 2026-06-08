@@ -24,6 +24,7 @@ const contenedorMiniaturas = document.getElementById('contenedorMiniaturas');
 let modoAdmin = false;
 let editandoId = null;
 let productosBase = [];
+let archivosPendientes = []; // Array custom para gestionar imágenes antes de subir
 
 // ==========================================
 // 2. CONTROL DEL BOTÓN CANDADO (LOGIN / LOGOUT)
@@ -51,6 +52,7 @@ if (btnPlus) {
         form.reset(); 
         document.getElementById('edit-id').value = ""; 
         campoUrlHidden.value = ""; 
+        archivosPendientes = []; // Limpiamos la cola de archivos nuevos
         actualizarMiniaturasEditor(); // Inicia completamente limpio
         modalForm.style.display = "flex"; 
     };
@@ -209,6 +211,7 @@ window.abrirEditar = (id) => {
     document.getElementById('descripcion').value = p.descripcion || "";
     document.getElementById('disponible').checked = p.disponible;
     
+    archivosPendientes = []; // Reiniciamos los archivos al abrir editor
     actualizarMiniaturasEditor(); 
     modalForm.style.display = "flex";
 };
@@ -289,6 +292,15 @@ function actualizarMiniaturasEditor() {
             campoUrlHidden.value = arregloUrls.join(',');
             await eliminarImagenDeSupabase(urlAEliminar);
             
+            // Actualizar la base de datos inmediatamente para evitar links rotos 
+            // en caso de que el usuario cierre el formulario sin guardar
+            if (editandoId) {
+                await supabaseClient
+                    .from('producto')
+                    .update({ imagen_url: campoUrlHidden.value || null })
+                    .eq('id_producto', editandoId);
+            }
+
             actualizarMiniaturasEditor(); 
         };
         
@@ -298,10 +310,10 @@ function actualizarMiniaturasEditor() {
 
 if (inputArchivo && contenedorMiniaturas) {
     inputArchivo.addEventListener('change', () => {
-        const archivos = inputArchivo.files;
+        const archivos = Array.from(inputArchivo.files);
 
-        for (let i = 0; i < archivos.length; i++) {
-            const archivo = archivos[i];
+        archivos.forEach((archivo) => {
+            archivosPendientes.push(archivo); // Lo añadimos a nuestro array dinámico
             const reader = new FileReader();
 
             reader.onload = function(e) {
@@ -312,12 +324,22 @@ if (inputArchivo && contenedorMiniaturas) {
                     <button type="button" class="btn-borrar-foto" title="Quitar">&times;</button>
                 `;
                 
-                div.querySelector('.btn-borrar-foto').onclick = () => { div.remove(); };
+                div.querySelector('.btn-borrar-foto').onclick = () => { 
+                    div.remove(); 
+                    // Al eliminar visualmente, también lo quitamos del array custom
+                    const index = archivosPendientes.indexOf(archivo);
+                    if (index > -1) {
+                        archivosPendientes.splice(index, 1);
+                    }
+                };
                 contenedorMiniaturas.appendChild(div);
             };
 
             reader.readAsDataURL(archivo);
-        }
+        });
+        
+        // Limpiar el input para permitir volver a subir el mismo archivo si se desea
+        inputArchivo.value = '';
     });
 }
 
@@ -387,7 +409,7 @@ function comprimirImagen(archivo) {
 form.onsubmit = async (e) => {
     e.preventDefault();
 
-    const archivosImagenes = document.getElementById('inputArchivo').files;
+    const archivosImagenes = archivosPendientes; // Usamos la cola limpia
     let urlsAcumuladas = [];
 
     if (campoUrlHidden.value && campoUrlHidden.value.trim() !== "") {
@@ -434,6 +456,7 @@ form.onsubmit = async (e) => {
     if (contenedorMiniaturas) contenedorMiniaturas.innerHTML = '';
     form.reset();
     editandoId = null;
+    archivosPendientes = []; // Vaciamos la cola tras guardar
     cargar(); 
 };
 
@@ -442,6 +465,18 @@ form.onsubmit = async (e) => {
 // ==========================================
 async function eliminarProducto(id) {
     if (confirm("¿Estás seguro de eliminar este producto?")) {
+        const producto = productosBase.find(x => x.id_producto === id);
+        
+        // Eliminar también las imágenes físicas asociadas a este producto en el Storage
+        if (producto && producto.imagen_url && producto.imagen_url.trim() !== "" && producto.imagen_url !== "null") {
+            const urls = producto.imagen_url.split(',').map(r => r.trim());
+            for (const url of urls) {
+                if (url) {
+                    await eliminarImagenDeSupabase(url);
+                }
+            }
+        }
+
         const { error } = await supabaseClient
             .from('producto')
             .delete()
