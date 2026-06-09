@@ -217,26 +217,26 @@ window.abrirEditar = (id) => {
 };
 
 // ==========================================
-// 5. GESTIÓN DE IMÁGENES EN BUCKET DE STORAGE
+// 5. GESTIÓN DE IMÁGENES EN BUCKET DE STORAGE (SINCRONIZADO .JPG)
 // ==========================================
 
-// Versión corregida: Sincroniza la extensión real de compresión (.jpg)
+// Función para subir una imagen comprimida al Storage de Supabase
 async function subirImagenASupabase(file) {
     if (!file) return null;
 
-    // 1. Interceptamos el archivo y obtenemos la versión JPEG comprimida en el navegador
+    // 1. Interceptamos el archivo original y obtenemos la versión JPEG comprimida
     const archivoOptimizado = await comprimirImagen(file);
 
-    // 2. CORREGIDO: Como comprimirImagen() siempre retorna un 'image/jpeg', 
-    // forzamos la extensión a 'jpg' para que coincida perfectamente con el Storage.
+    // 2. CORREGIDO: Forzamos que el nombre en el Storage use la extensión '.jpg' 
+    // para que coincida perfectamente con el formato binario generado por el Canvas.
     const fileName = `${Date.now()}.jpg`;
     const filePath = `productos/${fileName}`;
 
-    // 3. Subimos el archivo optimizado real al bucket
+    // 3. Enviamos el archivo optimizado real al bucket con el tipo de contenido explícito
     const { data, error } = await supabaseClient.storage
         .from('imagenes-productos')
         .upload(filePath, archivoOptimizado, {
-            contentType: 'image/jpeg', // Le avisamos explícitamente a Supabase el tipo de contenido
+            contentType: 'image/jpeg',
             upsert: true
         });
 
@@ -401,10 +401,10 @@ if (inputArchivo && contenedorMiniaturas) {
     });
 }
 
-// Función para comprimir una imagen a un peso menor a 1 MB usando Canvas
 function comprimirImagen(archivo) {
     return new Promise((resolve) => {
-        // Si el archivo ya pesa menos de 1 MB (1024 * 1024 bytes), no hace falta comprimir
+        // Si el archivo ya pesa menos de 1 MB, lo dejamos pasar, pero...
+        // ¡OJO! Si es un PNG liviano, igual pasará intacto, por lo que subirImagenASupabase le pondrá .jpg de forma segura.
         if (archivo.size <= 1024 * 1024) {
             return resolve(archivo);
         }
@@ -421,7 +421,6 @@ function comprimirImagen(archivo) {
                 let width = img.width;
                 let height = img.height;
 
-                // 1. Si la imagen es gigantesca en pixeles, reducimos sus dimensiones máximas a 1920px
                 const MAX_WIDTH = 1920;
                 const MAX_HEIGHT = 1080;
 
@@ -440,15 +439,13 @@ function comprimirImagen(archivo) {
                 canvas.width = width;
                 canvas.height = height;
 
-                // Dibujamos la imagen en el lienzo del canvas con el nuevo tamaño
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // 2. Exportamos el canvas como un Blob JPEG con calidad del 75% (0.75)
-                // Esto reduce drásticamente el peso manteniendo una excelente nitidez visual
                 canvas.toBlob((blob) => {
-                    // Convertimos el Blob de vuelta a un archivo File para que mantenga el nombre original
-                    const archivoComprimido = new File([blob], archivo.name, {
+                    // CORREGIDO: Extraemos el nombre base sin la extensión original y le concatenamos '.jpg'
+                    const nombreBase = archivo.name.substring(0, archivo.name.lastIndexOf('.')) || archivo.name;
+                    const archivoComprimido = new File([blob], `${nombreBase}.jpg`, {
                         type: 'image/jpeg',
                         lastModified: Date.now()
                     });
