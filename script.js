@@ -11,20 +11,44 @@ const modalDetalle = document.getElementById('modalDetalle');
 const form = document.getElementById('form-producto');
 const filtroEstado = document.getElementById('filtroEstado');
 
-// --- Control de Modales ---
+// ==========================================
+// CONTROL DE MODALES (CORREGIDO Y BLINDADO)
+// ==========================================
+
 if (btnAbrirLogin) {
     btnAbrirLogin.addEventListener('click', () => {
-        if (!modoAdmin) { if (modalLogin) modalLogin.style.display = "flex"; } 
-        else { salirModoAdmin(); }
+        if (!modoAdmin) { 
+            if (modalLogin) modalLogin.style.display = "flex"; 
+        } else { 
+            salirModoAdmin(); 
+        }
     });
 }
 
 if (btnPlus) {
     btnPlus.onclick = () => { 
-        editandoId = null; form.reset(); document.getElementById('edit-id').value = ""; campoUrlHidden.value = ""; 
-        archivosPendientes = []; actualizarMiniaturasEditor(); modalForm.style.display = "flex"; 
+        editandoId = null; 
+        form.reset(); 
+        document.getElementById('edit-id').value = ""; 
+        campoUrlHidden.value = ""; 
+        archivosPendientes = []; 
+        actualizarMiniaturasEditor(); 
+        modalForm.style.display = "flex"; 
     };
 }
+
+// 🔥 ESCUCHADORES REFORZADOS PARA CERRAR MODALES CON LA 'X'
+document.getElementById('cerrarLogin')?.addEventListener('click', () => {
+    if (modalLogin) modalLogin.style.display = "none";
+});
+
+document.getElementById('cerrarModal')?.addEventListener('click', () => {
+    if (modalForm) modalForm.style.display = "none";
+});
+
+document.getElementById('cerrarDetalle')?.addEventListener('click', () => {
+    if (modalDetalle) modalDetalle.style.display = "none";
+});
 
 // --- Autenticación ---
 document.getElementById('btnConfirmarLogin').onclick = async () => {
