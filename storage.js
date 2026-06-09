@@ -2,10 +2,6 @@
 // MÓDULO DE STORAGE: COMPRESIÓN, SUBIDA Y BORRADO DE FOTOS (.JPG SINCRONIZADO)
 // ==========================================================================
 
-const campoUrlHidden = document.getElementById('imagen_url');
-const inputArchivo = document.getElementById('inputArchivo');
-const contenedorMiniaturas = document.getElementById('contenedorMiniaturas');
-
 // 1. COMPRIMIR IMAGEN (Retorna siempre un Blob .jpg liviano)
 function comprimirImagen(archivo) {
     return new Promise((resolve) => {
