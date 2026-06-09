@@ -217,19 +217,25 @@ window.abrirEditar = (id) => {
 };
 
 // ==========================================
-// 5. SUBIR IMÁGENES AL BUCKET DE STORAGE
+// 5. GESTIÓN DE IMÁGENES EN BUCKET DE STORAGE
 // ==========================================
+
+// Función para subir una imagen comprimida al Storage de Supabase
 async function subirImagenASupabase(file) {
     if (!file) return null;
 
+    // 1. Interceptamos el archivo original y lo comprimimos si es necesario
     const archivoOptimizado = await comprimirImagen(file);
-    const fileExt = file.name.split('.').pop();
+
+    // 2. Extraemos la extensión real basada en el archivo procesado (ahora JPEG por la compresión)
+    const fileExt = archivoOptimizado.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `productos/${fileName}`;
 
+    // 3. 🔥 CORREGIDO: Enviamos 'archivoOptimizado' en lugar del 'file' pesado original
     const { data, error } = await supabaseClient.storage
         .from('imagenes-productos')
-        .upload(filePath, file);
+        .upload(filePath, archivoOptimizado);
 
     if (error) {
         alert("Error al subir imagen: " + error.message);
@@ -243,27 +249,39 @@ async function subirImagenASupabase(file) {
     return urlData.publicUrl;
 }
 
-// Función para eliminar físicamente un archivo del Storage usando su URL pública
+// Función blindada y unificada para eliminar físicamente un archivo del Storage usando su URL pública
 async function eliminarImagenDeSupabase(urlPublica) {
     if (!urlPublica || urlPublica.includes('placeholder.png')) return;
 
     try {
-        const partes = urlPublica.split('/imagenes-productos/');
-        if (partes.length < 2) return;
-        
-        const rutaArchivo = partes[1];
+        console.log("URL recibida para intentar borrar del Storage:", urlPublica);
 
+        // 1. Quitamos cualquier parámetro de consulta o token que empiece con "?" al final de la URL
+        const urlLimpia = urlPublica.split('?')[0];
+
+        // 2. Extraemos la ruta interna después del nombre de tu bucket ('imagenes-productos')
+        const partes = urlLimpia.split('/imagenes-productos/');
+        if (partes.length < 2) {
+            console.error("No se pudo procesar el nombre del bucket en la URL.");
+            return;
+        }
+        
+        // Pasamos de "object/public/imagenes-productos/productos/123.jpg" a estrictamente "productos/123.jpg"
+        const rutaArchivo = decodeURIComponent(partes[1]);
+        console.log("Ruta exacta calculada para enviar a Supabase:", rutaArchivo);
+
+        // 3. Ejecutamos la orden de eliminación en el Storage de Supabase
         const { data, error } = await supabaseClient.storage
             .from('imagenes-productos')
             .remove([rutaArchivo]);
 
         if (error) {
-            console.error("Error al eliminar archivo físico del Storage:", error.message);
+            console.error("Supabase rechazó el borrado físico:", error.message);
         } else {
-            console.log("Archivo eliminado con éxito del Storage:", rutaArchivo);
+            console.log("¡Éxito! Archivo destruido físicamente del Storage:", data);
         }
     } catch (err) {
-        console.error("Error inesperado al procesar borrado de archivo:", err);
+        console.error("Error inesperado en la función de borrado de archivos:", err);
     }
 }
 
@@ -286,22 +304,21 @@ function actualizarMiniaturasEditor() {
             <button type="button" class="btn-borrar-foto" title="Eliminar Foto">&times;</button>
         `;
         
-        // CORREGIDO: Ahora es una función ASYNC para poder esperar el borrado físico del Storage
         d.querySelector('.btn-borrar-foto').onclick = async () => {
             if (confirm("¿Estás seguro de que quieres eliminar esta imagen permanentemente del servidor?")) {
                 let arregloUrls = campoUrlHidden.value.split(',').map(r => r.trim());
                 
-                // 1. Guardamos la URL de la foto seleccionada antes de sacarla del arreglo
+                // Guardamos la URL de la foto seleccionada antes de sacarla del arreglo
                 const urlAEliminar = arregloUrls[i];
                 
-                // 2. Removemos la URL del arreglo de la base de datos
+                // Removemos la URL del arreglo de la base de datos
                 arregloUrls.splice(i, 1);
                 campoUrlHidden.value = arregloUrls.join(',');
                 
-                // 3. 🔥 ELIMINACIÓN FÍSICA: Le ordena a Supabase Storage destruir el archivo real
+                // Llamamos a la función asíncrona unificada para borrar el archivo del servidor
                 await eliminarImagenDeSupabase(urlAEliminar);
                 
-                // 4. Redibujamos las miniaturas remanentes en el panel del formulario
+                // Redibujamos las miniaturas remanentes en el panel del formulario
                 actualizarMiniaturasEditor(); 
             }
         };
