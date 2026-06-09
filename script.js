@@ -120,12 +120,18 @@ window.abrirEditar = (id) => {
     modalForm.style.display = "flex";
 };
 
+// Asegúrate de que esta sección en tu script.js use la cola global de forma limpia
 form.onsubmit = async (e) => {
     e.preventDefault();
-    let urlsAcumuladas = campoUrlHidden.value && campoUrlHidden.value.trim() !== "" ? campoUrlHidden.value.split(',').map(r => r.trim()) : [];
 
+    let urlsAcumuladas = campoUrlHidden.value && campoUrlHidden.value.trim() !== "" 
+        ? campoUrlHidden.value.split(',').map(r => r.trim()) 
+        : [];
+
+    // Llamamos asíncronamente a las funciones alojadas en storage.js
     if (archivosPendientes.length > 0) {
         for (let i = 0; i < archivosPendientes.length; i++) {
+            // Aquí se conecta con el storage.js modular que sí comprime y genera el .jpg
             const urlSubida = await subirImagenASupabase(archivosPendientes[i]);
             if (urlSubida) urlsAcumuladas.push(urlSubida);
         }
@@ -145,9 +151,16 @@ form.onsubmit = async (e) => {
         ? await supabaseClient.from('producto').update(datosProducto).eq('id_producto', editandoId)
         : await supabaseClient.from('producto').insert([datosProducto]);
 
-    if (error) alert("Error: " + error.message);
-    modalForm.style.display = "none";
-    form.reset(); editandoId = null; archivosPendientes = []; cargar(); 
+    if (error) {
+        alert("Error al guardar: " + error.message);
+    } else {
+        modalForm.style.display = "none";
+        form.reset(); 
+        editandoId = null; 
+        archivosPendientes = []; // Vaciamos la cola de manera segura
+        if (contenedorMiniaturas) contenedorMiniaturas.innerHTML = '';
+        cargar(); 
+    }
 };
 
 async function eliminarProducto(id) {

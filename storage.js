@@ -72,7 +72,7 @@ async function eliminarImagenDeSupabase(urlPublica) {
     try {
         const urlLimpia = urlPublica.split('?')[0];
         // CORRECCIÓN: Cortamos exactamente en el nombre del bucket para conservar "productos/nombre.jpg"
-        const partes = urlLimpia.split('/imagenes-productos/productos/');
+        const partes = urlLimpia.split('/imagenes-productos/');
         if (partes.length < 2) return;
         
         // decodeURIComponent asegura limpiar caracteres especiales o espacios si los hay
