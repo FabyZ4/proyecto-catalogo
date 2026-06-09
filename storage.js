@@ -66,23 +66,28 @@ async function subirImagenASupabase(file) {
     return urlData.publicUrl;
 }
 
-// 3. BORRAR ARCHIVO REAL DE LA NUBE
+// 3. BORRAR ARCHIVO REAL DE LA NUBE (CORREGIDO)
 async function eliminarImagenDeSupabase(urlPublica) {
     if (!urlPublica || urlPublica.includes('placeholder.png')) return;
     try {
         const urlLimpia = urlPublica.split('?')[0];
-        const partes = urlLimpia.split('/imagenes-productos/productos');
+        // CORRECCIÓN: Cortamos exactamente en el nombre del bucket para conservar "productos/nombre.jpg"
+        const partes = urlLimpia.split('/imagenes-productos/productos/');
         if (partes.length < 2) return;
         
-        const rutaArchivo = decodeURIComponent(partes[1]);
+        // decodeURIComponent asegura limpiar caracteres especiales o espacios si los hay
+        const rutaArchivo = decodeURIComponent(partes[1].trim());
         console.log("[Storage] Solicitando destrucción de archivo en Supabase:", rutaArchivo);
 
         const { data, error } = await supabaseClient.storage
             .from('imagenes-productos')
             .remove([rutaArchivo]);
 
-        if (error) console.error("[Storage] Supabase rechazó el borrado:", error.message);
-        else console.log("[Storage] ¡Destruido con éxito de la nube!", data);
+        if (error) {
+            console.error("[Storage] Supabase rechazó el borrado:", error.message);
+        } else {
+            console.log("[Storage] ¡Destruido con éxito de la nube!", data);
+        }
     } catch (err) {
         console.error("[Storage] Error crítico en borrado:", err);
     }
