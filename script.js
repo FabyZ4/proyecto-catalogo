@@ -310,29 +310,39 @@ function actualizarMiniaturasEditor() {
     });
 }
 
-// Función auxiliar para desarmar la URL y borrar el archivo real del Storage
+// Función blindada para eliminar físicamente un archivo del Storage usando su URL pública
 async function eliminarImagenDeSupabase(urlPublica) {
     if (!urlPublica || urlPublica.includes('placeholder.png')) return;
 
     try {
-        // Extraemos la ruta interna (ej: "productos/12345.png") de la URL pública de Supabase
-        const partes = urlPublica.split('/imagenes-productos/');
-        if (partes.length < 2) return;
-        
-        const rutaArchivo = partes[1];
+        console.log("URL recibida para intentar borrar del Storage:", urlPublica);
 
-        // Ejecutamos la orden de destrucción física en el bucket
-        const { error } = await supabaseClient.storage
+        // 1. Quitamos cualquier parámetro de consulta o token que empiece con "?" al final de la URL
+        const urlLimpia = urlPublica.split('?')[0];
+
+        // 2. Extraemos la ruta interna después del nombre de tu bucket ('imagenes-productos')
+        const partes = urlLimpia.split('/imagenes-productos/');
+        if (partes.length < 2) {
+            console.error("No se pudo procesar el nombre del bucket en la URL.");
+            return;
+        }
+        
+        // Pasamos de "object/public/imagenes-productos/productos/123.jpg" a estrictamente "productos/123.jpg"
+        const rutaArchivo = decodeURIComponent(partes[1]);
+        console.log("Ruta exacta calculada para enviar a Supabase:", rutaArchivo);
+
+        // 3. Ejecutamos la orden de eliminación en el Storage
+        const { data, error } = await supabaseClient.storage
             .from('imagenes-productos')
             .remove([rutaArchivo]);
 
         if (error) {
-            console.error("Error al eliminar archivo físico del Storage:", error.message);
+            console.error("Supabase rechazó el borrado físico:", error.message);
         } else {
-            console.log("Archivo borrado con éxito del Storage:", rutaArchivo);
+            console.log("¡Éxito! Archivo destruido físicamente del Storage:", data);
         }
     } catch (err) {
-        console.error("Error inesperado al procesar borrado de archivo:", err);
+        console.error("Error inesperado en la función de borrado de archivos:", err);
     }
 }
 
