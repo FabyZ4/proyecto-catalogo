@@ -220,22 +220,25 @@ window.abrirEditar = (id) => {
 // 5. GESTIÓN DE IMÁGENES EN BUCKET DE STORAGE
 // ==========================================
 
-// Función para subir una imagen comprimida al Storage de Supabase
+// Versión corregida: Sincroniza la extensión real de compresión (.jpg)
 async function subirImagenASupabase(file) {
     if (!file) return null;
 
-    // 1. Interceptamos el archivo original y lo comprimimos si es necesario
+    // 1. Interceptamos el archivo y obtenemos la versión JPEG comprimida en el navegador
     const archivoOptimizado = await comprimirImagen(file);
 
-    // 2. Extraemos la extensión real basada en el archivo procesado (ahora JPEG por la compresión)
-    const fileExt = archivoOptimizado.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
+    // 2. CORREGIDO: Como comprimirImagen() siempre retorna un 'image/jpeg', 
+    // forzamos la extensión a 'jpg' para que coincida perfectamente con el Storage.
+    const fileName = `${Date.now()}.jpg`;
     const filePath = `productos/${fileName}`;
 
-    // 3. 🔥 CORREGIDO: Enviamos 'archivoOptimizado' en lugar del 'file' pesado original
+    // 3. Subimos el archivo optimizado real al bucket
     const { data, error } = await supabaseClient.storage
         .from('imagenes-productos')
-        .upload(filePath, archivoOptimizado);
+        .upload(filePath, archivoOptimizado, {
+            contentType: 'image/jpeg', // Le avisamos explícitamente a Supabase el tipo de contenido
+            upsert: true
+        });
 
     if (error) {
         alert("Error al subir imagen: " + error.message);
