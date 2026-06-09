@@ -1,8 +1,6 @@
 // ==========================================
 // MÓDULO DE MANTENIMIENTO (CATEGORÍAS Y TIPOS)
 // ==========================================
-const selectorCategoria = document.getElementById('categoria'); 
-const selectorTipo = document.getElementById('tipo');
 
 async function cargarCategorias() {
     const f = document.getElementById('filtroCategoria'); 
