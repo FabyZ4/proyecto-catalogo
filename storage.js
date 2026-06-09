@@ -110,6 +110,7 @@ function actualizarMiniaturasEditor() {
         `;
         
         d.querySelector('.btn-borrar-foto').onclick = async () => {
+            console.log(`[Storage] Intentando eliminar imagen: ${url.trim()}`);
             if (confirm("¿Quieres eliminar esta imagen permanentemente del servidor?")) {
                 let arregloUrls = campoUrlHidden.value.split(',').map(r => r.trim());
                 const urlAEliminar = arregloUrls[i];
