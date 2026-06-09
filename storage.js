@@ -71,7 +71,7 @@ async function eliminarImagenDeSupabase(urlPublica) {
     if (!urlPublica || urlPublica.includes('placeholder.png')) return;
     try {
         const urlLimpia = urlPublica.split('?')[0];
-        const partes = urlLimpia.split('/imagenes-productos/');
+        const partes = urlLimpia.split('/imagenes-productos/productos');
         if (partes.length < 2) return;
         
         const rutaArchivo = decodeURIComponent(partes[1]);
